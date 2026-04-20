@@ -1,0 +1,722 @@
+<!--
+  🐜 Ant Numeric Tool [ant]
+  ant_v1.1.1.html
+
+  v1.0    2026.03.20  初回リリース：兵隊アリ孵化逆算・スライダー式リワード設定・レベル記憶・日英対応
+  v1.1    2026.03.21  チャトラ「見やすい」テーマに変更・リワード手入力にK/Mトグル+クリアボタン追加・「必要孵化数(予想)」に変更
+  v1.2.2  2026.04.12  全入力欄にinputmode=decimal・autocomplete=off追加
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ant Numeric Tool [ant]</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐜</text></svg>">
+<script>
+// apple-touch-icon（iOS ホーム画面アイコン）をCanvasで生成
+(function() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 180, 180);
+    ctx.font = '120px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🐜', 90, 95);
+    const link = document.createElement('link');
+    link.rel = 'apple-touch-icon';
+    link.href = canvas.toDataURL('image/png');
+    document.head.appendChild(link);
+  } catch(e) {}
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #1a1a2e;
+  --surface:   #242440;
+  --surface2:  #2e2e50;
+  --surface3:  #383860;
+  --border:    #4a4a70;
+  --text:      #f0ece0;
+  --text-dim:  #b0aec0;
+  --text-bright: #ffffff;
+  --accent:    #f0d060;
+  --accent2:   #ffe080;
+  --green:     #60e0a0;
+  --r3-color:  #ff9060;
+  --font-main: 'Noto Sans JP', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+  --sz-sm:  12px;
+  --sz-base: 15px;
+  --sz-lg:  17px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-main);
+  font-size: var(--sz-base);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ============================================================ ヘッダー */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 9px; }
+.header-icon { font-size: 20px; line-height: 1; }
+.header-title {
+  font-size: var(--sz-sm);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.lang-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-size: var(--sz-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: color 0.15s, border-color 0.15s;
+}
+.lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ============================================================ メイン */
+.main {
+  padding: 12px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* ============================================================ カード */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.card-title {
+  font-size: var(--sz-sm);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ============================================================ スライダー */
+.snap-slider {
+  -webkit-appearance: none;
+  width: 100%; height: 5px;
+  border-radius: 3px;
+  background: var(--surface3);
+  outline: none; cursor: pointer;
+  margin-bottom: 5px;
+}
+.snap-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+.snap-slider::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+}
+.snap-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.snap-tick {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  flex: 1;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.snap-tick:hover { color: var(--text); }
+.snap-tick.active { color: var(--accent); font-weight: 700; font-size: 11px; }
+
+.reward-val {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.reward-unit { font-size: var(--sz-sm); color: var(--text-dim); margin-left: 5px; }
+
+.manual-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.manual-label { font-size: var(--sz-sm); color: var(--text-dim); flex-shrink: 0; }
+
+/* ============================================================ 共通入力欄 */
+.field-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+
+/* ============================================================ 現在ポイント */
+.pts-row { display: flex; align-items: center; gap: 8px; }
+
+/* K/M縦トグル */
+.km-toggle {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.km-btn {
+  background: var(--surface2);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 5px 11px;
+  font-family: var(--font-mono);
+  font-size: var(--sz-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.km-btn:last-child { border-bottom: none; }
+.km-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.pts-unit { font-size: var(--sz-sm); color: var(--text-dim); flex-shrink: 0; }
+.clear-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 9px;
+  font-size: var(--sz-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+.clear-btn:hover { color: var(--r3-color); border-color: var(--r3-color); }
+
+/* プログレス */
+.progress-wrap { margin-top: 9px; }
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--sz-sm);
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.progress-track {
+  width: 100%; height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+/* ============================================================ レベル選択 */
+.level-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+.level-select:focus { border-color: var(--accent); }
+
+.manual-pts-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ============================================================ 結果 */
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.result-label {
+  font-size: var(--sz-sm);
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.result-num {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1;
+  margin-bottom: 2px;
+  transition: color 0.3s;
+}
+.result-num.achieved { color: var(--green); }
+.result-unit { font-size: var(--sz-sm); color: var(--text-dim); margin-bottom: 6px; }
+.result-sub { font-size: var(--sz-sm); color: var(--text-dim); }
+.result-sub span { color: var(--accent); font-family: var(--font-mono); }
+
+/* バージョン */
+.version-label {
+  position: fixed;
+  bottom: 8px; left: 12px;
+  font-size: var(--sz-sm);
+  color: var(--text-dim);
+  opacity: 0.5;
+  pointer-events: none;
+  font-family: var(--font-main);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="header-icon">🐜</span>
+    <div class="header-title" id="h-title">Ant Numeric Tool [ant]</div>
+  </div>
+  <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
+</div>
+
+<div class="main">
+
+  <!-- リワード目標 -->
+  <div class="card">
+    <div class="card-title" data-key="reward_target">リワード目標</div>
+    <input type="range" class="snap-slider" id="reward-slider"
+      min="0" max="9" step="1" value="6" oninput="onSliderInput()">
+    <div class="snap-ticks" id="snap-ticks"></div>
+    <div>
+      <span class="reward-val" id="reward-val">5.2M</span>
+      <span class="reward-unit">pt</span>
+    </div>
+    <div class="manual-row">
+      <span class="manual-label" data-key="manual_input">手入力</span>
+      <input class="field-input" id="reward-manual" type="number" min="0"
+        placeholder="例: 5.2" inputmode="decimal" autocomplete="off" oninput="onManualRewardInput()" onblur="onManualReward()">
+      <div class="km-toggle">
+        <button class="km-btn" id="rm-k" onclick="setRewardUnit('K')">K</button>
+        <button class="km-btn active" id="rm-m" onclick="setRewardUnit('M')">M</button>
+      </div>
+      <button class="clear-btn" onclick="clearRewardManual()">✕</button>
+    </div>
+  </div>
+
+  <!-- 現在ポイント -->
+  <div class="card">
+    <div class="card-title" data-key="current_pts">現在ポイント</div>
+    <div class="pts-row">
+      <input class="field-input" id="current-pts" type="number" min="0" step="any"
+        placeholder="0" inputmode="decimal" autocomplete="off" oninput="calcAll()">
+      <div class="km-toggle">
+        <button class="km-btn" id="km-k" onclick="setPtsUnit('K')">K</button>
+        <button class="km-btn active" id="km-m" onclick="setPtsUnit('M')">M</button>
+      </div>
+      <span class="pts-unit">pt</span>
+      <button class="clear-btn" onclick="clearPts()">✕</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-labels">
+        <span id="progress-current">0 pt</span>
+        <span id="progress-target">—</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <div id="progress-remain-row" style="text-align:right;font-size:12px;color:var(--text-dim);margin-top:4px;font-family:var(--font-mono);"></div>
+    </div>
+  </div>
+
+  <!-- レベル設定 -->
+  <div class="card">
+    <div class="card-title" data-key="level_setting">兵隊アリ レベル</div>
+    <select class="level-select" id="level-select" onchange="onLevelChange()">
+      <option value="215">Lv 10 — 215 pt / 匹</option>
+      <option value="190" selected>Lv 9 — 190 pt / 匹</option>
+      <option value="165">Lv 8 — 165 pt / 匹</option>
+      <option value="140">Lv 7 — 140 pt / 匹</option>
+      <option value="115">Lv 6 — 115 pt / 匹</option>
+      <option value="90">Lv 5 — 90 pt / 匹</option>
+      <option value="65">Lv 4 — 65 pt / 匹</option>
+      <option value="50">Lv 3 — 50 pt / 匹</option>
+      <option value="25">Lv 2 — 25 pt / 匹</option>
+      <option value="5">Lv 1 — 5 pt / 匹</option>
+      <option value="manual">Manual</option>
+    </select>
+    <div class="manual-pts-row" id="manual-pts-row" style="display:none;">
+      <span class="manual-label" data-key="pts_per_unit">pt / 匹</span>
+      <input class="field-input" id="manual-pts" type="number" min="1"
+        placeholder="例: 215" inputmode="decimal" autocomplete="off" oninput="calcAll()" style="max-width:140px;">
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-card">
+    <div class="result-label" data-key="required">必要孵化数(予測)</div>
+    <div class="result-num" id="result-num">—</div>
+    <div class="result-unit" data-key="units" id="result-unit">匹</div>
+    <div class="result-sub" id="result-sub"></div>
+  </div>
+
+</div>
+
+<div class="version-label">Apr 12 '26 🐜 v1.2.2</div>
+
+<script>
+// ============================================================
+// 言語
+// ============================================================
+const LANG = {
+  ja: {
+    reward_target: 'リワード目標',
+    current_pts:   '現在ポイント',
+    level_setting: '兵隊アリ レベル',
+    pts_per_unit:  'pt / 匹',
+    manual_input:  '手入力',
+    required:      '必要孵化数(予測)',
+    units:         '匹',
+    achieved:      '達成済み',
+    remain:        '残り',
+    lang_btn:      'EN',
+    progress_of:   '/',
+  },
+  en: {
+    reward_target: 'Reward Target',
+    current_pts:   'Current Points',
+    level_setting: 'Soldier Ant Level',
+    pts_per_unit:  'pt / ant',
+    manual_input:  'Manual',
+    required:      'Required Hatches (predicted)',
+    units:         'ants',
+    achieved:      'Achieved!',
+    remain:        'Remaining',
+    lang_btn:      'JP',
+    progress_of:   '/',
+  }
+};
+
+// ============================================================
+// スナップ値
+// ============================================================
+const SNAP_VALUES = [
+  640000, 800000, 2300000, 4000000, 4240000,
+  4800000, 5200000, 15200000, 15300000, 16300000
+];
+
+// ============================================================
+// 状態
+// ============================================================
+let lang = 'ja';
+let ptsUnit = 'M';
+let rewardUnit = 'M';
+let rewardTarget = 5200000;
+
+// ============================================================
+// フォーマット
+// ============================================================
+function fmtNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(2).replace(/\.?0+$/,'') + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.?0+$/,'') + 'K';
+  return n.toLocaleString();
+}
+function fmtHatch(n) {
+  return n.toLocaleString();
+}
+
+// ============================================================
+// 言語切替
+// ============================================================
+function applyLang() {
+  const L = LANG[lang];
+  document.getElementById('lang-btn').textContent = L.lang_btn;
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const key = el.getAttribute('data-key');
+    if (L[key] !== undefined) el.textContent = L[key];
+  });
+  // levelセレクトのManual表示は言語に関わらずManualのまま
+  calcAll();
+}
+
+function toggleLang() {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  try { localStorage.setItem('ant_lang', lang); } catch(e) {}
+  applyLang();
+}
+
+// ============================================================
+// スライダー
+// ============================================================
+function initSlider() {
+  const ticks = document.getElementById('snap-ticks');
+  ticks.innerHTML = '';
+  SNAP_VALUES.forEach((v, i) => {
+    const tick = document.createElement('span');
+    tick.className = 'snap-tick';
+    tick.textContent = fmtNum(v);
+    tick.onclick = () => {
+      document.getElementById('reward-slider').value = i;
+      setRewardTarget(v);
+      document.getElementById('reward-manual').value = '';
+    };
+    ticks.appendChild(tick);
+  });
+  updateTickHighlight();
+}
+
+function updateTickHighlight() {
+  const idx = parseInt(document.getElementById('reward-slider').value);
+  document.querySelectorAll('.snap-tick').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
+function onSliderInput() {
+  const idx = parseInt(document.getElementById('reward-slider').value);
+  setRewardTarget(SNAP_VALUES[idx]);
+  document.getElementById('reward-manual').value = '';
+}
+
+function onManualRewardInput() {
+  // 入力中はリワード値と計算だけ更新、スライダーは動かさない
+  const raw = parseFloat(document.getElementById('reward-manual').value);
+  if (isNaN(raw) || raw <= 0) return;
+  const v = rewardUnit === 'M' ? Math.round(raw * 1000000) : Math.round(raw * 1000);
+  rewardTarget = v;
+  document.getElementById('reward-val').textContent = fmtNum(v);
+  try { localStorage.setItem('ant_reward_target', v); } catch(e) {}
+  calcAll();
+}
+
+function onManualReward() {
+  // フォーカスアウト時にスライダーを最近接値に移動
+  const raw = parseFloat(document.getElementById('reward-manual').value);
+  if (isNaN(raw) || raw <= 0) return;
+  const v = rewardUnit === 'M' ? Math.round(raw * 1000000) : Math.round(raw * 1000);
+  setRewardTarget(v);
+  let closest = 0, minDiff = Infinity;
+  SNAP_VALUES.forEach((sv, i) => {
+    const diff = Math.abs(sv - v);
+    if (diff < minDiff) { minDiff = diff; closest = i; }
+  });
+  document.getElementById('reward-slider').value = closest;
+  updateTickHighlight();
+}
+
+function setRewardUnit(unit) {
+  rewardUnit = unit;
+  document.getElementById('rm-k').classList.toggle('active', unit === 'K');
+  document.getElementById('rm-m').classList.toggle('active', unit === 'M');
+}
+
+function clearRewardManual() {
+  document.getElementById('reward-manual').value = '';
+}
+
+function setRewardTarget(val) {
+  rewardTarget = val;
+  document.getElementById('reward-val').textContent = fmtNum(val);
+  try { localStorage.setItem('ant_reward_target', val); } catch(e) {}
+  updateTickHighlight();
+  calcAll();
+}
+
+// ============================================================
+// 現在ポイント
+// ============================================================
+function getCurrentPts() {
+  const num = parseFloat(document.getElementById('current-pts').value) || 0;
+  return ptsUnit === 'M' ? Math.round(num * 1000000) : Math.round(num * 1000);
+}
+
+function setPtsUnit(unit) {
+  ptsUnit = unit;
+  document.getElementById('km-k').classList.toggle('active', unit === 'K');
+  document.getElementById('km-m').classList.toggle('active', unit === 'M');
+  try { localStorage.setItem('ant_pts_unit', unit); } catch(e) {}
+  calcAll();
+}
+
+function clearPts() {
+  document.getElementById('current-pts').value = '';
+  calcAll();
+}
+
+// ============================================================
+// レベル選択
+// ============================================================
+function onLevelChange() {
+  const sel = document.getElementById('level-select');
+  const isManual = sel.value === 'manual';
+  document.getElementById('manual-pts-row').style.display = isManual ? 'flex' : 'none';
+  try { localStorage.setItem('ant_level', sel.value); } catch(e) {}
+  calcAll();
+}
+
+function getPtsPerUnit() {
+  const sel = document.getElementById('level-select');
+  if (sel.value === 'manual') {
+    return parseInt(document.getElementById('manual-pts').value) || 0;
+  }
+  return parseInt(sel.value) || 0;
+}
+
+// ============================================================
+// 計算
+// ============================================================
+function calcAll() {
+  const L = LANG[lang];
+  const pts = getCurrentPts();
+  const remain = Math.max(0, rewardTarget - pts);
+  const ppu = getPtsPerUnit();
+
+  // プログレス
+  const pct = Math.min(100, rewardTarget > 0 ? pts / rewardTarget * 100 : 0);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-current').textContent = fmtNum(pts) + ' pt';
+  document.getElementById('progress-target').textContent  = L.progress_of + ' ' + fmtNum(rewardTarget) + ' pt';
+  const remainRow = document.getElementById('progress-remain-row');
+  if (remainRow) {
+    remainRow.textContent = remain > 0 ? `残り ${fmtNum(remain)} pt` : '';
+  }
+
+  const numEl  = document.getElementById('result-num');
+  const subEl  = document.getElementById('result-sub');
+  const unitEl = document.getElementById('result-unit');
+
+  if (remain === 0) {
+    numEl.textContent = L.achieved;
+    numEl.className = 'result-num achieved';
+    unitEl.textContent = '';
+    subEl.textContent = '';
+    return;
+  }
+
+  numEl.className = 'result-num';
+  unitEl.textContent = L.units;
+
+  if (ppu <= 0) {
+    numEl.textContent = '—';
+    subEl.textContent = '';
+    return;
+  }
+
+  const count = Math.ceil(remain / ppu);
+  numEl.textContent = fmtHatch(count);
+  subEl.innerHTML = `${L.remain} <span>${fmtNum(remain)} pt</span> ÷ ${ppu} pt`;
+}
+
+// ============================================================
+// ストレージ読み込み
+// ============================================================
+function loadStorage() {
+  try {
+    const savedLang   = localStorage.getItem('ant_lang');
+    const savedTarget = localStorage.getItem('ant_reward_target');
+    const savedUnit   = localStorage.getItem('ant_pts_unit');
+    const savedLevel  = localStorage.getItem('ant_level');
+
+    if (savedLang) lang = savedLang;
+    if (savedUnit) {
+      ptsUnit = savedUnit;
+      document.getElementById('km-k').classList.toggle('active', savedUnit === 'K');
+      document.getElementById('km-m').classList.toggle('active', savedUnit === 'M');
+    }
+    if (savedTarget) {
+      const v = parseInt(savedTarget);
+      if (!isNaN(v)) {
+        rewardTarget = v;
+        document.getElementById('reward-val').textContent = fmtNum(v);
+        document.getElementById('reward-manual').value = '';
+        let closest = 0, minDiff = Infinity;
+        SNAP_VALUES.forEach((sv, i) => {
+          const diff = Math.abs(sv - v);
+          if (diff < minDiff) { minDiff = diff; closest = i; }
+        });
+        document.getElementById('reward-slider').value = closest;
+      }
+    }
+    if (savedLevel) {
+      const sel = document.getElementById('level-select');
+      sel.value = savedLevel;
+      if (savedLevel === 'manual') {
+        document.getElementById('manual-pts-row').style.display = 'flex';
+      }
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+function init() {
+  initSlider();
+  loadStorage();
+  applyLang();
+}
+
+init();
+</script>
+</body>
+</html>
